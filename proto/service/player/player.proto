@@ -1,0 +1,158 @@
+syntax = "proto3";
+package sro.character;
+option go_package = "pkg/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "sro/globals.proto";
+
+service CharacterService {
+  rpc GetCharacters(google.protobuf.Empty) returns (CharactersDetails) {
+    option (google.api.http) = {
+      get : "/v1/characters"
+    };
+  }
+
+  rpc GetCharacter(CharacterTarget) returns (CharacterDetails) {
+    option (google.api.http) = {
+      get : "/v1/characters/id/{id}"
+      additional_bindings : {get : "/v1/characters/name/{name}"}
+    };
+  }
+
+  rpc CreateCharacter(CreateCharacterRequest) returns (CharacterDetails) {
+    option (google.api.http) = {
+      post : "/v1/users/id/{owner.id}/characters"
+      body : "*"
+      additional_bindings : {
+        post : "/v1/users/name/{owner.username}/characters"
+        body : "*"
+      }
+    };
+  }
+
+  rpc DeleteCharacter(CharacterTarget) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/v1/characters/id/{id}"
+      additional_bindings : {delete : "/v1/characters/name/{name}"}
+    };
+  }
+
+  rpc GetAllCharactersForUser(sro.UserTarget) returns (CharactersDetails) {
+    option (google.api.http) = {
+      get : "/v1/users/id/{id}/characters"
+      additional_bindings : {get : "/v1/users/username/{username}/characters"}
+    };
+  }
+
+  rpc EditCharacter(EditCharacterRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/v1/characters/id/{target.id}"
+      body : "*"
+      additional_bindings : {
+        put : "/v1/characters/name/{target.name}"
+        body : "*"
+      }
+    };
+  }
+
+  // Adds the given amount of playtime to the character and returns the total
+  // playtime
+  rpc AddCharacterPlayTime(AddPlayTimeRequest) returns (PlayTimeResponse) {
+    option (google.api.http) = {
+      put : "/v1/characters/id/{character.id}/playtime"
+      body : "*"
+      additional_bindings : {
+        put : "/v1/characters/name/{character.name}/playtime"
+        body : "*"
+      }
+    };
+  }
+
+  rpc GetInventory(CharacterTarget) returns (Inventory) {
+    option (google.api.http) = {
+      get : "/v1/characters/id/{id}/inventory"
+      additional_bindings : {get : "/v1/characters/name/{name}/inventory"}
+    };
+  }
+
+  rpc SetInventory(UpdateInventoryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/v1/characters/id/{target.id}/inventory"
+      body : "*"
+      additional_bindings : {
+        post : "/v1/characters/name/{target.name}/inventory"
+        body : "*"
+      }
+    };
+  }
+}
+
+message PlayTimeResponse { uint64 time = 1; }
+
+message AddPlayTimeRequest {
+  CharacterTarget character = 1;
+  uint64 time = 2;
+}
+
+message CreateCharacterRequest {
+  sro.UserTarget owner = 1;
+  string name = 2;
+  string gender = 3;
+  string realm = 4;
+}
+
+message CharacterTarget {
+  oneof type {
+    uint64 id = 1;
+    string name = 2;
+  }
+}
+
+message EditCharacterRequest {
+  CharacterTarget target = 1;
+
+  // The user id that owns the character
+  oneof optional_owner_id { string owner_id = 3; }
+  oneof optional_new_name { string new_name = 4; }
+  oneof optional_gender { string gender = 5; }
+  oneof optional_realm { string realm = 6; }
+
+  oneof optional_play_time { uint64 play_time = 7; }
+
+  oneof optional_location { sro.Location location = 8; }
+}
+
+message CharacterDetails {
+  uint64 id = 1;
+  string owner = 2;
+  string name = 3;
+  string gender = 4;
+  string realm = 5;
+  uint64 play_time = 6;
+  sro.Location location = 8;
+}
+
+message CharactersDetails { repeated CharacterDetails characters = 1; }
+
+message InventoryItem {
+  // Item id
+  string id = 1;
+
+  // Slot number to place item
+  uint32 slot = 2;
+
+  // Number of the items in the slot
+  uint64 quantity = 3;
+}
+
+message Inventory {
+  repeated InventoryItem inventory_items = 1;
+  repeated InventoryItem bank_items = 2;
+}
+
+message UpdateInventoryRequest {
+  CharacterTarget target = 1;
+  repeated InventoryItem inventory_items = 2;
+  repeated InventoryItem bank_items = 3;
+}
