@@ -1,0 +1,234 @@
+version: '2.4'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    networks:
+      - backend
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - backend
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:22.7
+    restart: on-failure
+    environment:
+      CLICKHOUSE_DB: uptrace
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'localhost:8123/ping']
+      interval: 1s
+      timeout: 1s
+      retries: 30
+    volumes:
+      - ch_data_2:/var/lib/clickhouse
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    networks:
+      - backend
+
+  uptrace:
+    image: 'uptrace/uptrace-dev:latest'
+    restart: on-failure
+    volumes:
+      - uptrace_data:/var/lib/uptrace
+      - ./test/uptrace.yml:/etc/uptrace/uptrace.yml
+    #environment:
+    #  - DEBUG=2
+    ports:
+      - '14317:14317'
+      - '14318:14318'
+    depends_on:
+      - clickhouse
+    networks:
+      - backend
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.70.0
+    restart: on-failure
+    user: '0:0' # required for logs
+    volumes:
+      - ./test/otel-collector.yaml:/etc/otelcol-contrib/config.yaml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+    ports:
+      - '4317:4317'
+      - '4318:4318'
+    networks:
+      - backend
+
+  alertmanager:
+    image: prom/alertmanager:v0.24.0
+    restart: on-failure
+    volumes:
+      - ./test/alertmanager.yml:/etc/alertmanager/config.yml
+      - alertmanager_data:/alertmanager
+    ports:
+      - 9093:9093
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - backend
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    restart: on-failure
+    ports:
+      - '8025:8025'
+    networks:
+      - backend
+
+  vector:
+    image: timberio/vector:0.24.X-alpine
+    volumes:
+      - ./test/vector.toml:/etc/vector/vector.toml:ro
+    networks:
+      - backend
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - '5432:5432'
+    volumes: 
+      - postgres:/var/lib/postgresql/data
+      - ./test/db-init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    networks:
+      - backend
+
+  mongo:
+    restart: always
+    image: mongo:7.0-rc
+    volumes:
+      - mongo:/data/db
+    networks:
+      - backend
+    ports:
+      - 27017:27017
+    expose:
+      - 27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo 
+      MONGO_INITDB_ROOT_PASSWORD: password
+
+  keycloak:
+    image: quay.io/keycloak/keycloak
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres
+      DB_USER: postgres
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command:
+      - "start-dev"
+      - "--features=declarative-user-profile"
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  service-players:
+    build:
+      context: .
+      dockerfile: build/players.Dockerfile
+    ports:
+      - 8081:8081
+    depends_on:
+      - uptrace
+      - postgres
+    volumes:
+      - ./test/docker_config.yaml:/etc/service/config.yaml
+    networks:
+      - envoymesh
+      - backend
+
+  service-chat:
+    build:
+      context: .
+      dockerfile: build/chat.Dockerfile
+    ports:
+      - 8180:8180
+    depends_on:
+      - service-players
+      - kafka
+      - uptrace
+      - postgres
+    volumes:
+      - ./test/docker_config.yaml:/etc/service/config.yaml
+    networks:
+      - envoymesh
+      - backend
+
+  service-game:
+    build:
+      context: .
+      dockerfile: build/game.Dockerfile
+    ports:
+      - 8082:8082
+    depends_on:
+      - service-players
+      - uptrace
+    volumes:
+      - ./test/docker_config.yaml:/etc/service/config.yaml
+    networks:
+      - envoymesh
+      - backend
+  
+  service-envoy:
+    build:
+      context: ./build/envoy
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+      - "9901:9901"
+    expose:
+      - "80"
+      - "8081"
+    networks:
+      - envoymesh
+      - backend
+
+volumes:
+  uptrace_data:
+    driver: local
+  ch_data_2:
+    driver: local
+  alertmanager_data:
+    driver: local
+  postgres:
+    driver: local
+  mongo:
+    driver: local
+
+networks:
+  envoymesh:
+  backend:
+  passthrough:

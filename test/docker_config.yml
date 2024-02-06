@@ -1,0 +1,32 @@
+players:
+  remote:
+    host: server-characters
+  db:
+    master:
+      host: postgres
+  kafka:
+    host: kafka
+  keycloak:
+    baseUrl: http://keycloak:8080
+chat:
+  kafka:
+    host: kafka
+  remote:
+    host: server-chat
+  db:
+    master:
+      host: postgres
+  keycloak:
+    baseUrl: http://keycloak:8080
+game:
+  remote:
+    host: server-game
+  db:
+    master:
+      host: postgres
+  kafka:
+    host: kafka
+  keycloak:
+    baseUrl: http://keycloak:8080
+uptrace:
+  dsn: http://project2_secret_token@uptrace:14317/2
