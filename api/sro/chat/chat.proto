@@ -1,0 +1,147 @@
+syntax = "proto3";
+package sro.chat;
+option go_package = "pkg/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "sro/character/character.proto";
+
+service ChatService {
+
+  rpc ConnectChannel(ChatChannelTarget) returns (stream ChatMessage) {
+    option (google.api.http) = {
+      get : "/v1/message/channel/id/{id}"
+    };
+  }
+
+  rpc ConnectDirectMessage(sro.character.CharacterTarget)
+      returns (stream ChatMessage) {
+    option (google.api.http) = {
+      get : "/v1/message/character/name/{name}"
+      additional_bindings : {get : "/v1/message/character/id/{id}"}
+    };
+  }
+
+  rpc SendChatMessage(SendChatMessageRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/v1/message/channel/id/{channel_id}"
+      body : "*"
+    };
+  }
+
+  rpc SendDirectMessage(SendDirectMessageRequest)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/v1/message/character/name/{target.name}"
+      body : "*"
+      additional_bindings : {put : "/v1/message/character/name/{target.id}"}
+    };
+  }
+
+  rpc GetChannel(ChatChannelTarget) returns (ChatChannel) {
+    option (google.api.http) = {
+      get : "/v1/channels/id/{id}"
+    };
+  }
+
+  rpc AllChatChannels(google.protobuf.Empty) returns (ChatChannels) {
+    option (google.api.http) = {
+      get : "/v1/channels"
+    };
+  }
+
+  rpc CreateChannel(CreateChannelMessage) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/v1/channels"
+      body : "*"
+    };
+  }
+
+  rpc DeleteChannel(ChatChannelTarget) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete : "/v1/channels/id/{id}"
+    };
+  }
+
+  rpc EditChannel(UpdateChatChannelRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/v1/channels/id/{channel_id}"
+      body : "*"
+    };
+  }
+
+  rpc GetAuthorizedChatChannels(sro.character.CharacterTarget)
+      returns (ChatChannels) {
+    option (google.api.http) = {
+      get : "/v1/channels/character/name/{name}"
+      additional_bindings : {get : "/v1/channels/character/id/{id}"}
+    };
+  }
+
+  rpc UpdateUserChatChannelAuthorizations(RequestChatChannelAuthChange)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put : "/v1/channels/characters/name/{character.name}"
+      additional_bindings : {
+        put : "/v1/channels/characters/id/{character.id}"
+        body : "*"
+      }
+      body : "*"
+    };
+  }
+
+  rpc SetUserChatChannelAuthorizations(RequestSetChannelAuth)
+      returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post : "/v1/channels/characters/name/{character.name}"
+      additional_bindings : {post : "/v1/channels/characters/id/{character.id}"}
+    };
+  }
+}
+
+message RequestSetChannelAuth {
+  sro.character.CharacterTarget character = 1;
+  repeated uint64 ids = 2;
+}
+
+message RequestChatChannelAuthChange {
+  sro.character.CharacterTarget character = 1;
+  bool add = 2;
+  repeated uint64 ids = 3;
+}
+
+message ChatChannel {
+  uint64 id = 1;
+  string name = 2;
+  string dimension = 3;
+}
+
+message ChatChannels { repeated ChatChannel channels = 1; }
+
+message CreateChannelMessage {
+  string name = 1;
+  string dimension = 2;
+}
+
+message ChatChannelTarget { uint64 id = 1; }
+
+message ChatMessage {
+  string message = 1;
+  string character_name = 2;
+}
+
+message SendChatMessageRequest {
+  uint64 channel_id = 1;
+  ChatMessage chat_message = 2;
+}
+
+message SendDirectMessageRequest {
+  sro.character.CharacterTarget target = 1;
+  ChatMessage chat_message = 2;
+}
+
+message UpdateChatChannelRequest {
+  uint64 channel_id = 1;
+  oneof optional_name { string name = 2; }
+  oneof optional_dimension { string dimension = 3; }
+}

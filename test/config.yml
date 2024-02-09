@@ -1,6 +1,6 @@
-player:
+character:
   remote:
-    host: 'players'
+    host: 'characters'
     port: 8081
   mode: 'production'
   logLevel: 4

@@ -1,10 +1,10 @@
 package config
 
 import (
-	"github.com/ShatteredRealms/go-backend/pkg/helpers"
-	"github.com/ShatteredRealms/go-backend/pkg/model"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/zedGGs/grpc-multiplayer-world-fantasy/pkg/helpers"
+	"github.com/zedGGs/grpc-multiplayer-world-fantasy/pkg/model"
 )
 
 var (

@@ -155,10 +155,10 @@ services:
     networks:
       - backend
 
-  service-players:
+  service-characters:
     build:
       context: .
-      dockerfile: build/players.Dockerfile
+      dockerfile: build/characters.Dockerfile
     ports:
       - 8081:8081
     depends_on:
@@ -177,7 +177,7 @@ services:
     ports:
       - 8180:8180
     depends_on:
-      - service-players
+      - service-characters
       - kafka
       - uptrace
       - postgres
@@ -194,7 +194,7 @@ services:
     ports:
       - 8082:8082
     depends_on:
-      - service-players
+      - service-characters
       - uptrace
     volumes:
       - ./test/docker_config.yaml:/etc/service/config.yaml
