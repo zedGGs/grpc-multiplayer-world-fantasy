@@ -13,4 +13,8 @@ service HealthService {
   }
 }
 
+<<<<<<< HEAD
 message HealthMessage { string status = 1; }
+=======
+message HealthMessage { string status = 1; }
+>>>>>>> a148ed9 (adding proto and build)

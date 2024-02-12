@@ -144,4 +144,8 @@ message UpdateChatChannelRequest {
   uint64 channel_id = 1;
   oneof optional_name { string name = 2; }
   oneof optional_dimension { string dimension = 3; }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a148ed9 (adding proto and build)

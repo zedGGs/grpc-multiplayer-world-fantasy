@@ -155,4 +155,8 @@ message UpdateInventoryRequest {
   CharacterTarget target = 1;
   repeated InventoryItem inventory_items = 2;
   repeated InventoryItem bank_items = 3;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a148ed9 (adding proto and build)

@@ -55,4 +55,8 @@ message ConnectionStatus { bool online = 1; }
 message TransferPlayerRequest {
   string character = 1;
   sro.Location location = 2;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a148ed9 (adding proto and build)

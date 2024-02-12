@@ -173,4 +173,8 @@ message EditMapRequest {
   oneof optional_instanced { bool instanced = 5; }
 }
 
+<<<<<<< HEAD
 message Maps { repeated Map maps = 1; }
+=======
+message Maps { repeated Map maps = 1; }
+>>>>>>> a148ed9 (adding proto and build)
